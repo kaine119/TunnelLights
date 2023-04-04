@@ -1,5 +1,4 @@
 #include <Servo.h>
-#include "../common/KineticRain.h"
 
 /**
  * Firmware for the slave controller.
