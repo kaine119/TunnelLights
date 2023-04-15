@@ -1,4 +1,5 @@
 #include "../common/RecvData.h"
+#include <Adafruit_NeoPixel.h>
 
 /**
  * Receive data from a PC / other serial port, and write LEDs and servos
@@ -24,6 +25,60 @@ size_t bytes_read = 0;
 
 RecvData* receivedData;
 
+Adafruit_NeoPixel pixels(25, PA8, NEO_GRB + NEO_KHZ400);
+
+/**
+ * Handle the LED colours received.
+ */
+void handleLEDs() {
+  // Print colors
+  for (int i = 0; i < 25; i++)
+  {
+    Color color = (receivedData->colors)[i];
+    pixels.setPixelColor(i, pixels.Color(color.r, color.g, color.b));
+    Serial.print("Setting pixel ");
+    Serial.print(i);
+    Serial.print(" to color ");
+    Serial.print(color.r);
+    Serial.print(" ");
+    Serial.print(color.g);
+    Serial.print(" ");
+    Serial.print(color.b);
+    Serial.print(" ");
+  }
+  pixels.show();
+}
+
+/**
+ * Handle the first half of the servos received.
+ */
+void handleMasterServos() {
+  // Print positions of the first 12 servos
+  for (int i = 0; i < 12; i++)
+  {
+    Serial.print("Position ");
+    Serial.print((receivedData->positions)[i], DEC);
+    Serial.print('\n');
+  }
+}
+
+/**
+ * Send the last half of the servos received to the slave.
+ */
+void sendSlaveServos() {
+  Serial.println("Sending...");
+
+  Serial1.write(0xff);
+
+  for (int i = 12; i < 25; i++)
+  {
+    Serial1.write((receivedData->positions)[i]);
+  }
+  
+  delay(20);
+
+}
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
@@ -32,6 +87,26 @@ void setup() {
   // Initialise incoming data buffers
   receivedData = (RecvData*) malloc(sizeof(RecvData));
   recvBuf = (char*) malloc(sizeof(RecvData));
+
+  pixels.begin();
+  pixels.clear();
+  pixels.show();
+
+  // Flash a test pattern to check LEDs
+  for (int i = 0; i < 25; i++) {
+    pixels.setPixelColor(i, pixels.ColorHSV(i * 2000, 255, 255));
+    pixels.show();
+    delay(16);
+  }
+
+  delay(1000);
+
+  for (int i = 24; i > -1; i--) {
+    pixels.setPixelColor(i, pixels.ColorHSV(0, 0, 0));
+    pixels.show();
+    delay(16);
+  }
+  pixels.show();
 }
 
 void loop() {
@@ -71,54 +146,4 @@ void loop() {
     }
 
   }
-
-}
-
-
-/**
- * Handle the LED colours received.
- */
-void handleLEDs() {
-  // Print colors
-  for (int i = 0; i < 25; i++)
-  {
-    Color color = (receivedData->colors)[i];
-    Serial.print("Color ");
-    Serial.print(color.r, DEC);
-    Serial.print(' ');
-    Serial.print(color.g, DEC);
-    Serial.print(' ');
-    Serial.print(color.b, DEC);
-    Serial.print('\n');
-  }
-}
-
-/**
- * Handle the first half of the servos received.
- */
-void handleMasterServos() {
-  // Print positions of the first 12 servos
-  for (int i = 0; i < 12; i++)
-  {
-    Serial.print("Position ");
-    Serial.print((receivedData->positions)[i], DEC);
-    Serial.print('\n');
-  }
-}
-
-/**
- * Send the last half of the servos received to the slave.
- */
-void sendSlaveServos() {
-  Serial.println("Sending...");
-
-  Serial1.write(0xff);
-
-  for (int i = 12; i < 25; i++)
-  {
-    Serial1.write((receivedData->positions)[i]);
-  }
-  
-  delay(20);
-
 }
