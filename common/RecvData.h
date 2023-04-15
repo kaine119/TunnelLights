@@ -7,9 +7,9 @@
  * as supported by the WS2812 LED module.
  */
 typedef struct {
-  char r;
-  char g;
-  char b;
+  char h;
+  char s;
+  char v;
 } Color;
 
 /**
